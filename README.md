@@ -3,14 +3,14 @@
 <div align="center">
 
 ![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![AI Powered](https://img.shields.io/badge/AI-Powered-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white)
-![Security](https://img.shields.io/badge/Security-Cryptographic-1A6B3C?style=for-the-badge&logo=letsencrypt&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
-![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=for-the-badge)
+![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)
+![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)
+![Keras](https://img.shields.io/badge/Keras-D00000?style=for-the-badge&logo=keras&logoColor=white)
+![Cryptography](https://img.shields.io/badge/ECDSA-Cryptography-1A6B3C?style=for-the-badge)
 
-**A powerful, intelligent QR code scanner that combines AI-based threat detection with cryptographic verification to protect users from malicious QR codes.**
+**A real-time Streamlit-based QR code scanner with two modes: a 3-layer AI security pipeline (image tamper detection + malicious URL classification + TLS validation) and ECDSA cryptographic signature verification.**
 
-[Features](#-features) • [Installation](#-installation) • [Usage](#-usage) • [Architecture](#-architecture) • [Tech Stack](#-tech-stack) • [Contributing](#-contributing)
+[Features](#-features) • [Project Structure](#-project-structure) • [Installation](#-installation) • [How It Works](#-how-it-works) • [Usage](#-usage)
 
 </div>
 
@@ -18,165 +18,39 @@
 
 ## 📌 Overview
 
-QR codes have become ubiquitous in our daily lives — from payment systems to website links. However, they also present a significant security risk: malicious actors can embed harmful URLs, phishing links, or malware payloads inside QR codes that are visually indistinguishable from legitimate ones.
+This application provides two distinct scanning modes through a Streamlit web interface:
 
-This project addresses that problem by building a **Secure QR Code Scanner** that:
+1. **Security Scanner** — Runs a 3-layer AI pipeline on any standard QR code
+2. **Signature Scanner** — Verifies ECDSA cryptographic signatures embedded in specially generated QR codes
 
-- 🤖 Uses **AI/ML models** to detect malicious or suspicious content embedded in QR codes
-- 🔐 Applies **cryptographic verification** (digital signatures / hashing) to ensure QR code integrity
-- ⚠️ Alerts users in real-time when a threat is detected
-- 📊 Logs and reports scan history with threat analysis
+The system uses live webcam feed via OpenCV, AI models loaded with Keras and joblib, and cryptographic verification using the `cryptography` library with SECP256R1 elliptic curve keys.
 
 ---
 
 ## ✨ Features
 
-| Feature | Description |
-|---|---|
-| 🔍 **QR Code Scanning** | Scan QR codes from camera feed or uploaded images |
-| 🤖 **AI Threat Detection** | ML model classifies URLs/content as safe, suspicious, or malicious |
-| 🔐 **Cryptographic Verification** | RSA/SHA-based digital signature verification for trusted QR codes |
-| 🌐 **URL Analysis** | Deep inspection of embedded URLs for phishing, malware, and spoofing |
-| 📋 **Scan History** | Stores past scans with threat level and timestamp |
-| 🚨 **Real-time Alerts** | Instant visual/audio warnings when a threat is detected |
-| 📊 **Threat Reports** | Generates detailed threat analysis reports |
+### 🛡️ Security Scanner (3-Layer Pipeline)
 
----
+| Layer | Module | What it does |
+|---|---|---|
+| Layer 1 | `qr_model.h5` (Keras CNN) | Detects if the scanned QR image has been tampered with |
+| Layer 2 | `random_forest_model.joblib` | Classifies the embedded URL as safe or malicious using 21 extracted features |
+| Layer 3 | `tls_utils.py` | Validates the TLS/SSL certificate of the URL (expiry, domain match, SAN/wildcard support) |
 
-## 🏗️ Architecture
+### 🔏 Signature Scanner (ECDSA)
 
-```
-┌─────────────────────────────────────────────────┐
-│                  User Interface                  │
-│         (Camera / Image Upload / CLI)            │
-└──────────────────────┬──────────────────────────┘
-                       │
-                       ▼
-┌─────────────────────────────────────────────────┐
-│              QR Code Decoder Module              │
-│           (pyzbar / OpenCV / ZXing)              │
-└──────────┬───────────────────────┬──────────────┘
-           │                       │
-           ▼                       ▼
-┌──────────────────┐     ┌─────────────────────────┐
-│  Cryptographic   │     │   AI Threat Detection   │
-│  Verification    │     │        Engine           │
-│  (RSA / SHA-256) │     │  (ML Model / NLP / API) │
-└──────────┬───────┘     └────────────┬────────────┘
-           │                          │
-           └─────────────┬────────────┘
-                         ▼
-              ┌─────────────────────┐
-              │   Result & Alerts   │
-              │  (Safe / Warning /  │
-              │     Malicious)      │
-              └─────────────────────┘
-```
+- Parses QR codes containing a JSON payload with keys `"d"` (data/URL) and `"s"` (base64-encoded ECDSA signature)
+- Verifies the signature against `ec_public.pem` using `SECP256R1` + `SHA256`
+- Blocks any QR code that fails verification or is not in the expected signed JSON format
 
----
+### 📊 Dashboard & Sidebar
 
-## 🛠️ Tech Stack
-
-- **Language:** Python 3.9+
-- **QR Decoding:** `pyzbar`, `OpenCV`, `Pillow`
-- **AI / ML:** `scikit-learn` / `TensorFlow` / `transformers` (for threat classification)
-- **Cryptography:** `cryptography` library (RSA, SHA-256 digital signatures)
-- **URL Analysis:** VirusTotal API / Google Safe Browsing API
-- **GUI / Interface:** `tkinter` / `Streamlit` / CLI
-- **Database:** SQLite / Firebase (scan history logging)
-
----
-
-## 📦 Installation
-
-### Prerequisites
-
-- Python 3.9 or higher
-- pip package manager
-- (Optional) A VirusTotal API key for URL analysis
-
-### Steps
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/Nimraaaaaaaa/Secure-QR-Code-Scanner-with-AI-based-Threat-Detection-and-Cryptographic-Verification.git
-
-# 2. Navigate to the project directory
-cd Secure-QR-Code-Scanner-with-AI-based-Threat-Detection-and-Cryptographic-Verification
-
-# 3. Create a virtual environment (recommended)
-python -m venv venv
-source venv/bin/activate        # On Windows: venv\Scripts\activate
-
-# 4. Install dependencies
-pip install -r requirements.txt
-
-# 5. Set up environment variables
-cp .env.example .env
-# Edit .env and add your API keys (VirusTotal, etc.)
-```
-
----
-
-## 🚀 Usage
-
-### Scan a QR Code from an Image File
-
-```bash
-python main.py --image path/to/qr_image.png
-```
-
-### Scan Using Webcam (Live Mode)
-
-```bash
-python main.py --camera
-```
-
-### Verify Cryptographic Signature of a QR Code
-
-```bash
-python main.py --verify --image path/to/signed_qr.png --pubkey public_key.pem
-```
-
-### Generate a Cryptographically Signed QR Code
-
-```bash
-python main.py --generate --data "https://example.com" --privkey private_key.pem
-```
-
-### Run the Streamlit Web Interface
-
-```bash
-streamlit run app.py
-```
-
----
-
-## 🔐 How Cryptographic Verification Works
-
-1. A **trusted QR code** is generated by signing its content with a **private RSA key**
-2. The signature is embedded within the QR code (or stored separately)
-3. When scanned, the app uses the corresponding **public key** to verify the signature
-4. If the signature is **valid** → QR code is trusted ✅
-5. If the signature is **invalid or missing** → QR code is flagged ⚠️
-
-```
-[QR Content] + [Private Key] ──→ Digital Signature
-[QR Content] + [Signature] + [Public Key] ──→ Verified / Tampered
-```
-
----
-
-## 🤖 How AI Threat Detection Works
-
-The AI module analyzes the decoded QR content using:
-
-1. **URL Feature Extraction** — extracts features like domain age, HTTPS status, URL length, suspicious keywords
-2. **ML Classification** — a trained model (Random Forest / Neural Network) classifies the URL as:
-   - ✅ `SAFE` — No threat detected
-   - ⚠️ `SUSPICIOUS` — Proceed with caution
-   - 🚨 `MALICIOUS` — Block and alert user
-3. **API Cross-Check** — optionally validates against VirusTotal / Google Safe Browsing for enhanced accuracy
+- Live statistics: Total Scans, Safe Scans, Blocked Scans, Success Rate
+- Last 5 scan activity log with timestamps
+- Adjustable detection sensitivity slider (controls frame sampling rate via `frame_count % (11 - sensitivity)`)
+- Toggle: Auto-open safe URLs, Sound alerts
+- Clear all history button
+- Change Scanner Mode button
 
 ---
 
@@ -184,82 +58,270 @@ The AI module analyzes the decoded QR content using:
 
 ```
 📦 Secure-QR-Code-Scanner/
-├── 📂 src/
-│   ├── scanner.py            # QR code scanning & decoding
-│   ├── threat_detector.py    # AI threat detection engine
-│   ├── crypto_verify.py      # Cryptographic verification module
-│   ├── url_analyzer.py       # URL feature extraction & API checks
-│   └── logger.py             # Scan history & logging
-├── 📂 models/
-│   └── threat_classifier.pkl # Trained ML model
-├── 📂 keys/
-│   ├── private_key.pem       # RSA private key (DO NOT SHARE)
-│   └── public_key.pem        # RSA public key
-├── 📂 data/
-│   └── training_data.csv     # Dataset for model training
-├── 📂 tests/
-│   └── test_scanner.py       # Unit tests
-├── app.py                    # Streamlit web interface
-├── main.py                   # CLI entry point
-├── requirements.txt          # Python dependencies
-├── .env.example              # Environment variables template
-└── README.md
+├── app.py                          # Main Streamlit app — UI, camera loops, mode selection
+├── crypto_utils.py                 # verify_signature() using ec_public.pem (ECDSA SHA256)
+├── tls_utils.py                    # check_tls_certificate() — expiry + CN/SAN + wildcard check
+├── utils.py                        # preprocess_qr_image() + extract_url_features() (21 features)
+├── generate_keys.py                # Generates ECDSA key pair → ec_private.pem, ec_public.pem
+├── qr_generator.py                 # Signs a URL with ec_private.pem → saves secure_qr.png
+├── scanner.py                      # Standalone CLI-only signature scanner (no Streamlit)
+├── models/
+│   ├── qr_model.h5                 # Keras CNN — image tamper detection (input: 128×128 RGB)
+│   └── random_forest_model.joblib  # Scikit-learn Random Forest — URL classification
+├── ec_private.pem                  # ECDSA private key (DO NOT commit — add to .gitignore)
+├── ec_public.pem                   # ECDSA public key (used by crypto_utils.py)
+├── secure_qr.png                   # Example signed QR output from qr_generator.py
+├── .env                            # Stores GOOGLE_API_KEY for Web Risk API
+└── requirements.txt
 ```
 
 ---
 
-## 🧪 Running Tests
+## ⚙️ Installation
+
+### 1. Clone the repository
 
 ```bash
-python -m pytest tests/ -v
+git clone https://github.com/Nimraaaaaaaa/Secure-QR-Code-Scanner-with-AI-based-Threat-Detection-and-Cryptographic-Verification.git
+cd Secure-QR-Code-Scanner-with-AI-based-Threat-Detection-and-Cryptographic-Verification
+```
+
+### 2. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+Required packages:
+
+```
+streamlit
+opencv-python
+numpy
+keras
+tensorflow
+joblib
+scikit-learn
+cryptography
+qrcode[pil]
+python-dotenv
+requests
+```
+
+### 3. Set up environment variables
+
+Create a `.env` file in the project root:
+
+```
+GOOGLE_API_KEY=your_google_webrisk_api_key_here
+```
+
+### 4. Generate ECDSA Key Pair
+
+```bash
+python generate_keys.py
+```
+
+This creates `ec_private.pem` and `ec_public.pem` using the `SECP256R1` curve. Output:
+
+```
+✅ ECDSA Keys generated!
+ec_private.pem — secret rakho
+ec_public.pem  — scanner mein use hogi
+```
+
+> ⚠️ **Never commit `ec_private.pem` to GitHub.** Add it to `.gitignore`.
+
+### 5. Add trained models
+
+Place the following files inside the `models/` folder before launching the Security Scanner:
+
+- `qr_model.h5` — Keras CNN trained for QR image tamper detection
+- `random_forest_model.joblib` — Scikit-learn Random Forest trained for URL threat classification
+
+---
+
+## 🚀 Usage
+
+### Run the Streamlit App
+
+```bash
+streamlit run app.py
+```
+
+On launch, select a scanner mode:
+
+- **🛡️ Security Scanner** — for standard QR codes (requires models to be loaded)
+- **🔏 Signature Scanner** — for ECDSA-signed QR codes only
+
+### Generate a Signed QR Code
+
+```bash
+python qr_generator.py
+```
+
+Signs the URL `https://botifyhub.io` with `ec_private.pem` and saves the output as `secure_qr.png`.
+
+The QR encodes the following JSON:
+
+```json
+{"d": "https://botifyhub.io", "s": "<base64_ecdsa_signature>"}
+```
+
+### Run the Standalone CLI Scanner (Signature Mode only)
+
+```bash
+python scanner.py
+```
+
+Reads from webcam directly. Verifies signatures and opens valid URLs in browser. Press `Q` to quit.
+
+---
+
+## 🔍 How It Works
+
+### Security Scanner Flow (`run_security_scanner()` in `app.py`)
+
+```
+Webcam Frame (OpenCV)
+        │
+        ▼
+cv2.QRCodeDetector.detectAndDecode()
+        │
+        ├─► Layer 1 — Image Tamper Detection
+        │       preprocess_qr_image(qr_image)
+        │           → resize to 128×128, normalize to [0,1], expand dims
+        │       qr_model.h5.predict()
+        │           → label == 1  →  ❌ BLOCKED (Tampered)
+        │           → label == 0  →  ✅ Continue
+        │
+        ├─► Layer 2 — Malicious URL Detection
+        │       extract_url_features(url)  →  21 numeric features
+        │       random_forest_model.predict()
+        │           → pred == 1  →  ❌ BLOCKED (Malicious URL)
+        │           → pred == 0  →  ✅ Continue
+        │
+        └─► Layer 3 — TLS Certificate Validation
+                check_tls_certificate(url)
+                    → SSL socket handshake on port 443
+                    → Check notBefore / notAfter
+                    → Match hostname vs CN + SAN (wildcard aware)
+                    → Returns (True, "TLS certificate valid")
+                            or (False, reason)
+```
+
+### Signature Scanner Flow (`run_signature_scanner()` in `app.py`)
+
+```
+Webcam Frame (OpenCV)
+        │
+        ▼
+cv2.QRCodeDetector.detectAndDecode()
+        │
+        ▼
+json.loads(data)  →  {"d": url, "s": signature}
+        │
+        ▼
+verify_signature(url, signature)   [crypto_utils.py]
+        │
+        ├── base64.b64decode(signature)
+        ├── load ec_public.pem (SECP256R1)
+        └── public_key.verify(sig, data.encode(), ECDSA(SHA256))
+                ├── Valid    →  ✅ URL opened in browser
+                └── Invalid  →  ❌ BLOCKED (Forged / Tampered)
 ```
 
 ---
 
-## 📸 Screenshots
+## 🧠 URL Feature Extraction — `extract_url_features()` in `utils.py`
 
-> *(Add screenshots of your application here)*
+The function extracts **21 numeric features** from a URL string for the Random Forest classifier:
 
-| Live Scanner | Threat Alert | Scan Report |
-|:---:|:---:|:---:|
-| ![Scanner](screenshots/scanner.png) | ![Alert](screenshots/alert.png) | ![Report](screenshots/report.png) |
-
----
-
-## 🔮 Future Enhancements
-
-- [ ] Mobile app (Android/iOS) version
-- [ ] Browser extension for inline QR scanning
-- [ ] Blockchain-based QR certificate authority
-- [ ] Support for NFC-based verification
-- [ ] Multi-language support
-- [ ] Real-time threat intelligence feed integration
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository
-2. Create a new branch: `git checkout -b feature/your-feature-name`
-3. Commit your changes: `git commit -m 'Add: your feature description'`
-4. Push to the branch: `git push origin feature/your-feature-name`
-5. Open a Pull Request
-
-Please make sure your code follows PEP8 standards and includes appropriate tests.
+| # | Feature Description |
+|---|---|
+| 1 | Has digit in URL |
+| 2 | Starts with HTTPS |
+| 3 | Contains `google.com` |
+| 4 | Total dot (`.`) count |
+| 5 | `www` occurrence count |
+| 6 | `@` symbol count |
+| 7 | Forward slash count in path |
+| 8 | Reserved (0) |
+| 9 | URL length < 20 |
+| 10 | `https` substring count |
+| 11 | `http` substring count |
+| 12 | `%` character count |
+| 13 | `?` character count |
+| 14 | `=` character count |
+| 15 | Total URL length |
+| 16 | Hostname length |
+| 17 | Reserved (0) |
+| 18 | Total digit count in URL |
+| 19 | Total alpha character count |
+| 20 | Last path segment length |
+| 21 | TLD (top-level domain) length |
 
 ---
 
-## ⚠️ Disclaimer
+## 🔐 TLS Validation — `check_tls_certificate()` in `tls_utils.py`
 
-This tool is intended for **educational and security research purposes**. The authors are not responsible for any misuse. Always obtain proper authorization before scanning QR codes in production systems.
+Three checks are performed on the SSL certificate of the URL's hostname:
+
+1. **Validity Period** — `notBefore` and `notAfter` compared against `datetime.utcnow()`
+2. **Domain Match** — Hostname matched against `commonName` (CN) and all `subjectAltName` (SAN) DNS entries, including wildcard patterns (e.g. `*.example.com`)
+3. **SSL Handshake** — Uses `ssl.create_default_context()` with a 5-second socket timeout on port 443
+
+---
+
+## 🔑 Cryptographic Key Files
+
+| File | Purpose |
+|---|---|
+| `generate_keys.py` | Generates `SECP256R1` ECDSA key pair |
+| `ec_private.pem` | Signs URL data — **keep secret, never commit** |
+| `ec_public.pem` | Verifies signatures in `crypto_utils.py` |
+| `qr_generator.py` | Signs a URL and saves as `secure_qr.png` |
+| `crypto_utils.py` | `verify_signature(data, signature)` → `True` / `False` |
+
+---
+
+## 📸 Scanner Mode Comparison
+
+| Feature | 🛡️ Security Scanner | 🔏 Signature Scanner |
+|---|---|---|
+| Input QR type | Any standard QR code | Signed JSON QR only (`{"d":..., "s":...}`) |
+| AI Models used | ✅ Keras CNN + Random Forest | ❌ Not used |
+| TLS Check | ✅ Yes | ❌ Not used |
+| Crypto Verification | ❌ Not used | ✅ ECDSA SHA256 |
+| Auto-open URL | ✅ All 3 layers must pass | ✅ Signature must be valid |
+| Blocks on | Tampered image or Malicious URL | Invalid or forged signature |
+| Standalone CLI | ❌ Streamlit only | ✅ Also available via `scanner.py` |
+
+---
+
+## 🔮 Possible Improvements
+
+- [ ] Add VirusTotal API integration (`check_google_webrisk()` is already implemented in `utils.py` but not called in the main pipeline)
+- [ ] Support QR image file upload in addition to live webcam
+- [ ] Export scan history as CSV from the sidebar
+- [ ] Train `qr_model.h5` on a larger and more diverse tampered/authentic QR dataset
+- [ ] Dockerize the full application
+- [ ] Add support for multiple signed URLs in one session without cooldown
+
+---
+
+## ⚠️ Important Notes
+
+- Add `ec_private.pem` to `.gitignore` before pushing to GitHub
+- The `GOOGLE_API_KEY` in `.env` is loaded in `utils.py` via `python-dotenv` for the `check_google_webrisk()` function — it is implemented but not yet wired into the main scan pipeline
+- Both AI models (`qr_model.h5` and `random_forest_model.joblib`) must exist inside the `models/` folder before the Security Scanner can be launched
+- The 3-second cooldown (`current_time - last_scan_time > 3`) prevents duplicate scans of the same QR code
 
 ---
 
 ## 📄 License
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License**.
 
 ---
 
